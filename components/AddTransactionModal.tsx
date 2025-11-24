@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import type { Transaction, TransactionType, Category, PaymentMethod, Bank, TransactionSource } from '../types';
 
@@ -14,7 +15,16 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState<number | ''>('');
     const [category, setCategory] = useState(expenseCategories[0]?.value || '');
-    const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+    
+    // Fix: Initialize date using Local Time to prevent UTC offset issues (e.g., defaulted to yesterday early in the morning)
+    const [date, setDate] = useState(() => {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    });
+
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
     const [bank, setBank] = useState<string>(banks[0]?.id || '');
     const [source, setSource] = useState<TransactionSource>('personal');
