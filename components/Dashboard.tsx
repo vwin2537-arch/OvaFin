@@ -49,6 +49,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ transactions, getCategoryB
     const [period, setPeriod] = useState<Period>('month');
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+    const [selectedSource, setSelectedSource] = useState<TransactionSource | 'all'>('all');
     const [isMonthYearPickerOpen, setIsMonthYearPickerOpen] = useState(false);
 
     useEffect(() => {
@@ -65,6 +66,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ transactions, getCategoryB
         startOfWeek.setHours(0, 0, 0, 0);
 
         return transactions.filter(t => {
+            // 1. Filter by Source
+            const tSource = t.source || 'personal';
+            if (selectedSource !== 'all' && tSource !== selectedSource) {
+                return false;
+            }
+
+            // 2. Filter by Period/Date
             const tDate = new Date(t.date);
             if (period === 'week') {
                 return tDate >= startOfWeek;
@@ -77,7 +85,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ transactions, getCategoryB
             }
             return true;
         });
-    }, [transactions, period, selectedMonth, selectedYear]);
+    }, [transactions, period, selectedMonth, selectedYear, selectedSource]);
 
     const { totalIncome, totalExpense, balance, expenseByCategory, expenseBySource, incomeBySource } = useMemo(() => {
         const data = filteredTransactions.reduce((acc, t) => {
@@ -176,18 +184,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ transactions, getCategoryB
 
     return (
         <div className="space-y-6 pb-20">
-            <header className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+            <header className="flex flex-col xl:flex-row justify-between xl:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-minimal-text-main">แดชบอร์ด</h1>
                     <p className="text-minimal-text-secondary">สรุปภาพรวมการเงินของคุณ</p>
                 </div>
-                <div className="flex items-center space-x-2 flex-wrap">
-                    <div className="flex bg-slate-100 p-1 rounded-lg">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2 flex-wrap">
+                    {/* Source Filter Dropdown */}
+                    <select 
+                        value={selectedSource} 
+                        onChange={(e) => setSelectedSource(e.target.value as TransactionSource | 'all')}
+                        className="px-3 py-1.5 bg-white border border-minimal-border rounded-md text-sm font-semibold text-minimal-text-main focus:outline-none focus:ring-1 focus:ring-minimal-primary h-9"
+                    >
+                        <option value="all">ทุกสังกัด</option>
+                        <option value="erawan">เอราวัณ</option>
+                        <option value="wildfire_station">สถานีไฟป่า</option>
+                        <option value="personal">ส่วนตัว</option>
+                    </select>
+
+                    <div className="flex bg-slate-100 p-1 rounded-lg h-9 items-center">
                         {(['week', 'month', 'year'] as Period[]).map(p => (
                             <button
                                 key={p}
                                 onClick={() => setPeriod(p)}
-                                className={`px-3 py-1 rounded-md text-sm font-semibold transition-colors ${
+                                className={`px-3 py-0.5 h-7 rounded-md text-sm font-semibold transition-colors flex items-center ${
                                     period === p ? 'bg-white shadow-sm text-minimal-primary' : 'text-minimal-text-secondary hover:bg-slate-200'
                                 }`}
                             >
@@ -197,7 +217,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ transactions, getCategoryB
                     </div>
                      <div className="relative">
                         {(period === 'month' || period === 'year') && (
-                            <button onClick={() => setIsMonthYearPickerOpen(true)} className={pickerButtonClasses}>
+                            <button onClick={() => setIsMonthYearPickerOpen(true)} className={`${pickerButtonClasses} h-9`}>
                                 <CalendarIcon />
                                 {period === 'month' ? `${fullThaiMonths[selectedMonth]} ${selectedYear + 543}` : `พ.ศ. ${selectedYear + 543}`}
                             </button>
@@ -241,8 +261,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ transactions, getCategoryB
 
             {/* Source Analysis Row */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {renderPieChart(incomeSourceChartData, 'ที่มาของรายรับ (Income Source)', 'ไม่มีข้อมูลรายรับ')}
-                {renderPieChart(expenseSourceChartData, 'แหล่งที่ใช้จ่าย (Expense Source)', 'ไม่มีข้อมูลรายจ่าย')}
+                {renderPieChart(incomeSourceChartData, `ที่มาของรายรับ ${selectedSource !== 'all' ? `(${getSourceLabel(selectedSource)})` : ''}`, 'ไม่มีข้อมูลรายรับ')}
+                {renderPieChart(expenseSourceChartData, `แหล่งที่ใช้จ่าย ${selectedSource !== 'all' ? `(${getSourceLabel(selectedSource)})` : ''}`, 'ไม่มีข้อมูลรายจ่าย')}
             </div>
 
             {/* Expense By Category Row */}
