@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import type { Transaction, Category, Bank } from '../types';
+import type { Transaction, Category, Bank, TransactionSource, TransactionType } from '../types';
 import { MonthYearPicker } from './MonthYearPicker';
 
 interface ExportDataModalProps {
@@ -17,8 +18,19 @@ const fullThaiMonths = [
     "กรกฎาคม", "สิงหาคม", "กันยายน", "ตุลาคม", "พฤศจิกายน", "ธันวาคม"
 ];
 
+const getSourceLabel = (source: TransactionSource | undefined): string => {
+    switch (source) {
+        case 'erawan': return 'เอราวัณ';
+        case 'wildfire_station': return 'สถานีไฟป่า';
+        case 'personal': return 'ส่วนตัว';
+        default: return 'ส่วนตัว';
+    }
+};
+
 export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, onClose, allCategories, getBankById, transactionYears }) => {
     const [category, setCategory] = useState<string>('all');
+    const [exportType, setExportType] = useState<TransactionType | 'all'>('all');
+    const [exportSource, setExportSource] = useState<TransactionSource | 'all'>('all');
     const [period, setPeriod] = useState<Period>('month');
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
     const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
@@ -32,10 +44,21 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, 
         const now = new Date();
         const filtered = transactions.filter(t => {
             const tDate = new Date(t.date);
+            
+            // Filter by Category
             const isCategoryMatch = category === 'all' || t.category === category;
             
-            if (!isCategoryMatch) return false;
+            // Filter by Type (Income/Expense)
+            const isTypeMatch = exportType === 'all' || t.type === exportType;
 
+            // Filter by Source (Erawan/Wildfire/Personal)
+            // Default undefined source to 'personal' for filtering consistency
+            const tSource = t.source || 'personal';
+            const isSourceMatch = exportSource === 'all' || tSource === exportSource;
+            
+            if (!isCategoryMatch || !isTypeMatch || !isSourceMatch) return false;
+
+            // Filter by Period
             switch (period) {
                 case 'week':
                     const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - now.getDay());
@@ -56,7 +79,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, 
             return;
         }
 
-        const headers = ['Date', 'Description', 'Category', 'Type', 'Amount', 'Payment Method', 'Bank'];
+        const headers = ['Date', 'Description', 'Category', 'Source', 'Type', 'Amount', 'Payment Method', 'Bank'];
         const csvContent = [
             headers.join(','),
             ...filtered.map(t => {
@@ -66,7 +89,8 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, 
                     t.date,
                     `"${t.description.replace(/"/g, '""')}"`,
                     categoryLabel,
-                    t.type,
+                    getSourceLabel(t.source),
+                    t.type === 'income' ? 'รายรับ' : 'รายจ่าย',
                     t.amount,
                     t.paymentMethod === 'online' ? 'Online' : 'Cash',
                     bankName
@@ -80,7 +104,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, 
         if (link.download !== undefined) {
             const url = URL.createObjectURL(blob);
             link.setAttribute('href', url);
-            link.setAttribute('download', `transactions-export-${new Date().toISOString().slice(0,10)}.csv`);
+            link.setAttribute('download', `ovafin-export-${new Date().toISOString().slice(0,10)}.csv`);
             link.style.visibility = 'hidden';
             document.body.appendChild(link);
             link.click();
@@ -91,9 +115,29 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, 
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-minimal-card rounded-2xl shadow-xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="bg-minimal-card rounded-2xl shadow-xl w-full max-w-md p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <h2 className="text-xl font-bold text-minimal-text-main mb-4">Export ข้อมูลเป็น CSV</h2>
                 <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-minimal-text-secondary">ประเภทรายการ</label>
+                            <select value={exportType} onChange={e => setExportType(e.target.value as TransactionType | 'all')} className={inputClasses}>
+                                <option value="all">ทั้งหมด</option>
+                                <option value="income">รายรับ</option>
+                                <option value="expense">รายจ่าย</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-minimal-text-secondary">แหล่งที่มา/สังกัด</label>
+                            <select value={exportSource} onChange={e => setExportSource(e.target.value as TransactionSource | 'all')} className={inputClasses}>
+                                <option value="all">ทั้งหมด</option>
+                                <option value="erawan">เอราวัณ</option>
+                                <option value="wildfire_station">สถานีไฟป่า</option>
+                                <option value="personal">ส่วนตัว</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-minimal-text-secondary">เลือกหมวดหมู่</label>
                         <select value={category} onChange={e => setCategory(e.target.value)} className={inputClasses}>
@@ -101,6 +145,7 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, 
                             {allCategories.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
                         </select>
                     </div>
+
                      <div>
                         <label className="block text-sm font-medium text-minimal-text-secondary">เลือกช่วงเวลา</label>
                         <select value={period} onChange={e => setPeriod(e.target.value as Period)} className={inputClasses}>

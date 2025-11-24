@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import type { Bank } from '../types';
 
@@ -51,5 +52,9 @@ export const useBanks = () => {
         }
     };
 
-    return { banks, addBank, deleteBank, clearBanks };
+    const setAllBanks = (newBanks: Bank[]) => {
+        setBanks(newBanks);
+    };
+
+    return { banks, addBank, deleteBank, clearBanks, setAllBanks };
 };

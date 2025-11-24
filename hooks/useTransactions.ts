@@ -44,5 +44,9 @@ export const useTransactions = () => {
     }
   };
 
-  return { transactions, addTransaction, deleteTransaction, clearTransactions };
+  const setAllTransactions = (newTransactions: Transaction[]) => {
+      setTransactions(newTransactions);
+  };
+
+  return { transactions, addTransaction, deleteTransaction, clearTransactions, setAllTransactions };
 };

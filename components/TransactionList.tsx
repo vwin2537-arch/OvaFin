@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Transaction, Category, Bank } from '../types';
+import type { Transaction, Category, Bank, TransactionSource } from '../types';
 import { DeleteConfirmationModal } from './DeleteConfirmationModal';
 
 interface TransactionItemProps {
@@ -9,12 +9,32 @@ interface TransactionItemProps {
     getBankById: (id: string) => Bank | undefined;
 }
 
+const getSourceLabel = (source: TransactionSource | undefined): string => {
+    switch (source) {
+        case 'erawan': return 'เอราวัณ';
+        case 'wildfire_station': return 'สถานีไฟป่า';
+        case 'personal': return 'ส่วนตัว';
+        default: return 'ส่วนตัว'; // Default for backward compatibility
+    }
+};
+
+const getSourceColor = (source: TransactionSource | undefined): string => {
+    switch (source) {
+        case 'erawan': return 'bg-blue-100 text-blue-800';
+        case 'wildfire_station': return 'bg-orange-100 text-orange-800';
+        case 'personal': return 'bg-purple-100 text-purple-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+};
+
 const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, onRequestDelete, getCategoryByValue, getBankById }) => {
     const isIncome = transaction.type === 'income';
     const category = getCategoryByValue(transaction.category);
     const Icon = category?.icon || (() => null);
     const paymentMethodText = transaction.paymentMethod === 'online' ? 'ออนไลน์' : 'เงินสด';
     const bank = transaction.bank ? getBankById(transaction.bank) : null;
+    const sourceLabel = getSourceLabel(transaction.source);
+    const sourceColorClass = getSourceColor(transaction.source);
 
     return (
         <li className="flex items-center justify-between py-4 border-b border-minimal-border last:border-b-0">
@@ -23,7 +43,12 @@ const TransactionItem: React.FC<TransactionItemProps> = ({ transaction, onReques
                     <Icon className={`w-5 h-5 ${isIncome ? 'text-minimal-income' : 'text-minimal-expense'}`} />
                 </div>
                 <div>
-                    <p className="font-semibold text-minimal-text-main">{transaction.description}</p>
+                    <div className="flex items-center gap-2">
+                        <p className="font-semibold text-minimal-text-main">{transaction.description}</p>
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${sourceColorClass}`}>
+                            {sourceLabel}
+                        </span>
+                    </div>
                     <p className="text-sm text-minimal-text-secondary">
                         {category?.label || transaction.category}
                         <span className="text-gray-400 mx-1.5">·</span>

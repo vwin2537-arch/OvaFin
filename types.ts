@@ -1,10 +1,12 @@
+
 // Fix: Import ComponentType to resolve React namespace error.
 import type { ComponentType } from 'react';
 
 export type TransactionType = 'income' | 'expense';
 export type PaymentMethod = 'cash' | 'online';
+export type TransactionSource = 'erawan' | 'wildfire_station' | 'personal';
 
-export type View = 'dashboard' | 'transactions' | 'ai_assistant' | 'settings';
+export type View = 'dashboard' | 'transactions' | 'settings';
 
 export interface Transaction {
   id: string;
@@ -15,6 +17,7 @@ export interface Transaction {
   date: string; // ISO 8601 format string
   paymentMethod: PaymentMethod;
   bank?: string; // Bank ID
+  source: TransactionSource;
 }
 
 export interface Category {

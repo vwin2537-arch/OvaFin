@@ -77,5 +77,21 @@ export const useCategories = () => {
         }
     };
 
-    return { incomeCategories, expenseCategories, addCategory, deleteCategory, clearCategories };
+    const setAllIncomeCategories = (categories: Category[]) => {
+        setIncomeCategories(categories);
+    };
+
+    const setAllExpenseCategories = (categories: Category[]) => {
+        setExpenseCategories(categories);
+    };
+
+    return { 
+        incomeCategories, 
+        expenseCategories, 
+        addCategory, 
+        deleteCategory, 
+        clearCategories,
+        setAllIncomeCategories,
+        setAllExpenseCategories
+    };
 };

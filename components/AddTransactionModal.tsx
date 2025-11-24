@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Transaction, TransactionType, Category, PaymentMethod, Bank } from '../types';
+import type { Transaction, TransactionType, Category, PaymentMethod, Bank, TransactionSource } from '../types';
 
 interface AddTransactionModalProps {
     onClose: () => void;
@@ -17,6 +17,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
     const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
     const [bank, setBank] = useState<string>(banks[0]?.id || '');
+    const [source, setSource] = useState<TransactionSource>('personal');
     
     useEffect(() => {
         setCategory(type === 'expense' ? expenseCategories[0]?.value : incomeCategories[0]?.value);
@@ -39,6 +40,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
                 category,
                 date,
                 paymentMethod,
+                source
             };
             if (paymentMethod === 'online') {
                 if (!bank) {
@@ -60,7 +62,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-minimal-card rounded-2xl shadow-xl w-full max-w-md p-6 m-4" onClick={e => e.stopPropagation()}>
+            <div className="bg-minimal-card rounded-2xl shadow-xl w-full max-w-md p-6 m-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex justify-between items-center mb-4">
                     <h2 className="text-xl font-bold text-minimal-text-main">เพิ่มรายการใหม่</h2>
                     <button onClick={onClose} className="text-minimal-text-secondary hover:text-minimal-text-main text-2xl font-bold">&times;</button>
@@ -72,6 +74,15 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-minimal-text-secondary mb-1">สังกัด/ประเภท</label>
+                        <div className="grid grid-cols-3 gap-2">
+                            <button type="button" onClick={() => setSource('erawan')} className={`py-2 px-1 rounded-lg text-xs md:text-sm font-semibold transition-colors ${source === 'erawan' ? 'bg-minimal-primary text-white' : 'bg-slate-50 text-minimal-text-secondary border border-minimal-border'}`}>เอราวัณ</button>
+                            <button type="button" onClick={() => setSource('wildfire_station')} className={`py-2 px-1 rounded-lg text-xs md:text-sm font-semibold transition-colors ${source === 'wildfire_station' ? 'bg-minimal-primary text-white' : 'bg-slate-50 text-minimal-text-secondary border border-minimal-border'}`}>สถานีไฟป่า</button>
+                            <button type="button" onClick={() => setSource('personal')} className={`py-2 px-1 rounded-lg text-xs md:text-sm font-semibold transition-colors ${source === 'personal' ? 'bg-minimal-primary text-white' : 'bg-slate-50 text-minimal-text-secondary border border-minimal-border'}`}>ส่วนตัว</button>
+                        </div>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-minimal-text-secondary">จำนวนเงิน</label>
                         <input
