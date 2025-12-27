@@ -20,11 +20,7 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availab
     const pickerRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (selectMode === 'year') {
-            setView('years');
-        } else {
-            setView('months');
-        }
+        setView(selectMode === 'year' ? 'years' : 'months');
     }, [selectMode]);
 
     useEffect(() => {
@@ -34,9 +30,7 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availab
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
+        return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [onClose]);
 
     const handleMonthSelect = (monthIndex: number | 'all') => {
@@ -59,15 +53,15 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availab
 
     const renderMonthView = () => (
         <div className="p-2">
-            <div className="grid grid-cols-4 gap-2 mb-2">
+            <div className="grid grid-cols-4 gap-2 mb-3">
                 {thaiMonths.map((month, index) => (
                     <button
                         key={month}
                         onClick={() => handleMonthSelect(index)}
-                        className={`px-2 py-3 text-sm rounded-lg transition-colors ${
+                        className={`px-2 py-3 text-sm rounded-xl transition-all ${
                             value.month === index && value.year === displayYear
-                                ? 'bg-minimal-primary text-white font-semibold'
-                                : 'hover:bg-slate-100 text-minimal-text-secondary'
+                                ? 'bg-minimal-primary text-white font-bold shadow-md scale-105'
+                                : 'hover:bg-slate-100 text-minimal-text-secondary active:scale-95'
                         }`}
                     >
                         {month}
@@ -77,9 +71,9 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availab
             {selectMode === 'month' && (
                 <button
                     onClick={() => handleMonthSelect('all')}
-                    className={`w-full py-2.5 text-sm font-bold rounded-lg border-2 transition-colors ${
+                    className={`w-full py-3 text-sm font-bold rounded-xl border-2 transition-all ${
                         value.month === 'all' && value.year === displayYear
-                        ? 'bg-minimal-primary border-minimal-primary text-white'
+                        ? 'bg-minimal-primary border-minimal-primary text-white shadow-md'
                         : 'border-slate-200 text-minimal-primary hover:bg-slate-50'
                     }`}
                 >
@@ -92,21 +86,19 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availab
     const renderYearView = () => {
         const years = [...availableYears];
         const currentYear = new Date().getFullYear();
-        if (!years.includes(currentYear)) {
-            years.push(currentYear);
-        }
+        if (!years.includes(currentYear)) years.push(currentYear);
         years.sort((a,b) => b - a);
         if (years.length === 0) years.push(currentYear);
 
         return (
-            <div className="grid grid-cols-4 gap-2 p-2 max-h-48 overflow-y-auto">
+            <div className="grid grid-cols-3 gap-2 p-2 max-h-64 overflow-y-auto">
                 {years.map(year => (
                     <button
                         key={year}
                         onClick={() => handleYearSelect(year)}
-                        className={`px-2 py-3 text-sm rounded-lg transition-colors ${
+                        className={`px-2 py-3 text-sm rounded-xl transition-all ${
                             value.year === year
-                                ? 'bg-minimal-primary text-white font-semibold'
+                                ? 'bg-minimal-primary text-white font-bold shadow-md'
                                 : 'hover:bg-slate-100 text-minimal-text-secondary'
                         }`}
                     >
@@ -120,27 +112,27 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availab
     return (
         <div 
             ref={pickerRef} 
-            className="w-[calc(100vw-2rem)] sm:w-80 bg-minimal-card border border-minimal-border rounded-xl shadow-2xl overflow-hidden"
+            className="w-[calc(100vw-2.5rem)] sm:w-80 bg-white border border-minimal-border rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200"
             style={{ maxWidth: '320px' }}
         >
-            <div className="flex items-center justify-between p-2 border-b border-minimal-border">
+            <div className="flex items-center justify-between p-3 border-b border-minimal-border bg-slate-50">
                 <button 
                     onClick={() => setDisplayYear(displayYear - 1)} 
-                    className={`p-2 rounded-full hover:bg-slate-100 text-minimal-text-secondary ${selectMode === 'year' || view === 'years' ? 'invisible' : ''}`}
+                    className={`p-2 rounded-full hover:bg-white hover:shadow-sm text-minimal-text-secondary ${view === 'years' ? 'invisible' : ''}`}
                 >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                 </button>
                 
                 <button 
                     onClick={toggleView} 
-                    className={`font-semibold text-minimal-primary px-3 py-1 rounded-md ${selectMode === 'year' ? 'cursor-default' : 'hover:bg-slate-100'}`}
+                    className={`font-bold text-minimal-primary px-4 py-1.5 rounded-lg hover:bg-white hover:shadow-sm transition-all ${selectMode === 'year' ? 'cursor-default' : ''}`}
                 >
-                    {selectMode === 'year' ? 'เลือกปี พ.ศ.' : (view === 'months' ? `พ.ศ. ${displayYear + 543}` : 'เลือกปี')}
+                    {view === 'months' ? `พ.ศ. ${displayYear + 543}` : 'เลือกปี พ.ศ.'}
                 </button>
                 
                 <button 
                     onClick={() => setDisplayYear(displayYear + 1)} 
-                    className={`p-2 rounded-full hover:bg-slate-100 text-minimal-text-secondary ${selectMode === 'year' || view === 'years' ? 'invisible' : ''}`}
+                    className={`p-2 rounded-full hover:bg-white hover:shadow-sm text-minimal-text-secondary ${view === 'years' ? 'invisible' : ''}`}
                 >
                     <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                 </button>
