@@ -47,16 +47,20 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
     const sourceLabel = getSourceLabel(transaction.source);
     const sourceColorClass = getSourceColor(transaction.source);
 
+    // ตรวจสอบสถานะเบิกคืน (รองรับข้อมูลเก่าที่ไม่มีฟิลด์นี้)
+    const canBeCleared = transaction.isReimbursable === true && transaction.isCleared !== true;
+    const isAlreadyCleared = transaction.isReimbursable === true && transaction.isCleared === true;
+
     return (
         <li className={`flex flex-col sm:flex-row sm:items-center justify-between py-4 border-b border-minimal-border last:border-b-0 gap-4 transition-colors ${isSelected ? 'bg-amber-50/50' : ''}`}>
             <div className="flex items-center flex-1">
-                {transaction.isReimbursable && !transaction.isCleared && (
+                {canBeCleared && (
                     <div className="mr-3 pl-2">
                         <input 
                             type="checkbox" 
                             checked={isSelected}
                             onChange={() => onSelect(transaction.id)}
-                            className="w-5 h-5 rounded border-gray-300 text-minimal-primary focus:ring-minimal-primary"
+                            className="w-5 h-5 rounded border-gray-300 text-minimal-primary focus:ring-minimal-primary cursor-pointer"
                         />
                     </div>
                 )}
@@ -69,7 +73,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${sourceColorClass}`}>
                             {sourceLabel}
                         </span>
-                        {transaction.isReimbursable && (
+                        {transaction.isReimbursable === true && (
                             <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${transaction.isCleared ? 'bg-green-50 text-green-700 border-green-200' : 'bg-amber-50 text-amber-700 border-amber-200'}`}>
                                 {transaction.isCleared ? '✓ เคลียร์แล้ว' : '⌛ รอเบิกคืน'}
                             </span>
@@ -89,7 +93,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
                     <p className={`font-bold text-lg ${isIncome ? 'text-minimal-income' : 'text-minimal-expense'}`}>
                         {isIncome ? '+' : '-'}฿{transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </p>
-                    {transaction.isReimbursable && !transaction.isCleared && (
+                    {canBeCleared && (
                         <button 
                             onClick={() => onRequestClear(transaction)}
                             className="text-[11px] text-amber-600 hover:text-amber-700 font-bold bg-amber-100 px-2 py-1 rounded mt-1 transition-all active:scale-95 whitespace-nowrap"
@@ -97,7 +101,7 @@ const TransactionItem: React.FC<TransactionItemProps> = ({
                             เคลียร์ยอดนี้
                         </button>
                     )}
-                    {transaction.isReimbursable && transaction.isCleared && (
+                    {isAlreadyCleared && (
                         <button 
                             onClick={() => onCancelClear(transaction.id)}
                             className="text-[11px] text-gray-400 hover:text-minimal-text-secondary mt-1 whitespace-nowrap"
@@ -174,15 +178,18 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
             if (selectedSource !== 'all' && (t.source || 'personal') !== selectedSource) return false;
             if (selectedType !== 'all' && t.type !== selectedType) return false;
             if (selectedCategory !== 'all' && t.category !== selectedCategory) return false;
-            if (selectedStatus === 'pending') return t.isReimbursable && !t.isCleared;
-            if (selectedStatus === 'cleared') return t.isReimbursable && t.isCleared;
+            
+            // ปรับปรุงการกรองสถานะให้รองรับข้อมูลเก่า
+            if (selectedStatus === 'pending') return t.isReimbursable === true && t.isCleared !== true;
+            if (selectedStatus === 'cleared') return t.isReimbursable === true && t.isCleared === true;
+            
             return true;
         });
     }, [transactions, selectedSource, selectedStatus, selectedType, selectedMonth, selectedYear, selectedCategory]);
 
     const totalPendingAmount = useMemo(() => {
         return filteredTransactions
-            .filter(t => t.isReimbursable && !t.isCleared)
+            .filter(t => t.isReimbursable === true && t.isCleared !== true)
             .reduce((sum, t) => sum + t.amount, 0);
     }, [filteredTransactions]);
 
@@ -194,7 +201,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
     };
 
     const handleSelectAll = () => {
-        const reimbursableOnPage = filteredTransactions.filter(t => t.isReimbursable && !t.isCleared);
+        const reimbursableOnPage = filteredTransactions.filter(t => t.isReimbursable === true && t.isCleared !== true);
         if (selectedIds.size === reimbursableOnPage.length && reimbursableOnPage.length > 0) {
             setSelectedIds(new Set());
         } else {
@@ -204,7 +211,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
 
     const handleBulkClear = () => {
         if (selectedIds.size === 0) {
-            const pending = filteredTransactions.filter(t => t.isReimbursable && !t.isCleared);
+            const pending = filteredTransactions.filter(t => t.isReimbursable === true && t.isCleared !== true);
             if (pending.length > 0 && confirm(`คุณต้องการยืนยันการเคลียร์ยอดทั้งหมด ${pending.length} รายการที่แสดงอยู่ใช่หรือไม่?`)) {
                 pending.forEach(t => updateTransaction(t.id, { isCleared: true }));
             }
@@ -337,7 +344,7 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
                         <div className="bg-slate-50 px-4 py-2 border-b border-minimal-border flex items-center">
                             <input 
                                 type="checkbox" 
-                                checked={selectedIds.size > 0 && selectedIds.size === filteredTransactions.filter(t => t.isReimbursable && !t.isCleared).length}
+                                checked={selectedIds.size > 0 && selectedIds.size === filteredTransactions.filter(t => t.isReimbursable === true && t.isCleared !== true).length}
                                 onChange={handleSelectAll}
                                 className="w-5 h-5 rounded border-gray-300 text-minimal-primary focus:ring-minimal-primary mr-3 cursor-pointer"
                             />

@@ -13,6 +13,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ tran
     const [amount, setAmount] = useState<number>(transaction.amount);
     const [description, setDescription] = useState(transaction.description);
     const [date, setDate] = useState(transaction.date);
+    const [isReimbursable, setIsReimbursable] = useState<boolean>(transaction.isReimbursable || false);
     const [showConfirm, setShowConfirm] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -24,7 +25,10 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ tran
         onSave({
             amount,
             description,
-            date
+            date,
+            isReimbursable,
+            // ถ้าเปลี่ยนจาก ไม่เบิกคืน เป็น เบิกคืน ให้ตั้งค่าเริ่มต้นเป็น ยังไม่เคลียร์
+            isCleared: isReimbursable ? (transaction.isCleared || false) : false
         });
     };
 
@@ -49,6 +53,24 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ tran
                             </p>
                         </div>
 
+                        {transaction.type === 'expense' && (
+                            <div className="flex items-center justify-between bg-amber-50 p-3 rounded-lg border border-amber-100 mb-4">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-bold text-amber-900">เบิกคืนได้ (สำรองจ่าย)</span>
+                                    <span className="text-xs text-amber-700">เปิดเพื่อใช้ระบบติดตามการเคลียร์ยอด</span>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={isReimbursable} 
+                                        onChange={(e) => setIsReimbursable(e.target.checked)}
+                                        className="sr-only peer" 
+                                    />
+                                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                                </label>
+                            </div>
+                        )}
+
                         <div>
                             <label className="block text-sm font-medium text-minimal-text-secondary">จำนวนเงิน (แก้ไขเมื่อได้รับเงินทอน)</label>
                             <input
@@ -58,11 +80,7 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ tran
                                 onChange={(e) => setAmount(parseFloat(e.target.value))}
                                 className="mt-1 block w-full px-4 py-3 bg-slate-50 border border-minimal-border rounded-lg focus:outline-none focus:ring-2 focus:ring-minimal-primary text-2xl font-bold text-minimal-text-main"
                                 required
-                                autoFocus
                             />
-                            <p className="text-xs text-amber-600 mt-1 font-medium bg-amber-50 p-2 rounded">
-                                * ใส่ยอดที่จ่ายไปจริง (ยอดเดิมหักเงินทอนที่ได้รับคืน)
-                            </p>
                         </div>
 
                         <div>
@@ -98,26 +116,22 @@ export const EditTransactionModal: React.FC<EditTransactionModalProps> = ({ tran
                             <h3 className="text-lg font-bold text-blue-800 mb-3 text-center">ยืนยันการเปลี่ยนแปลง?</h3>
                             <div className="space-y-2 text-sm">
                                 <div className="flex justify-between border-b border-blue-100 pb-1">
+                                    <span className="text-blue-600">สถานะเบิกคืน:</span>
+                                    <span className={`font-bold ${isReimbursable ? 'text-amber-600' : 'text-gray-400'}`}>
+                                        {isReimbursable ? 'เปิดการใช้งาน' : 'ปิดการใช้งาน'}
+                                    </span>
+                                </div>
+                                <div className="flex justify-between border-b border-blue-100 pb-1">
                                     <span className="text-blue-600">ยอดเดิม:</span>
-                                    <span className="font-bold text-gray-500 line-through">฿{transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                                    <span className="font-bold text-gray-400 line-through">฿{transaction.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                                 </div>
                                 <div className="flex justify-between border-b border-blue-100 pb-1">
                                     <span className="text-blue-600">ยอดใหม่:</span>
                                     <span className="font-bold text-minimal-primary text-lg">฿{amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                                 </div>
-                                {transaction.amount !== amount && (
-                                    <div className="flex justify-between font-bold">
-                                        <span className="text-blue-600">เงินคืน/ส่วนต่าง:</span>
-                                        <span className="text-green-600">฿{(transaction.amount - amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
-                                    </div>
-                                )}
                             </div>
                         </div>
                         
-                        <p className="text-sm text-center text-minimal-text-secondary mb-6">
-                            กรุณาตรวจสอบความถูกต้องของจำนวนเงินก่อนบันทึก
-                        </p>
-
                         <div className="flex flex-col space-y-2">
                             <button 
                                 onClick={handleActualSave}
