@@ -31,7 +31,8 @@ const App: React.FC = () => {
 
   const transactionYears = useMemo(() => {
     const years = new Set(transactions.map(t => new Date(t.date).getFullYear()));
-    return Array.from(years).sort((a, b) => b - a);
+    // Fix: Explicitly type sort parameters to resolve arithmetic operation error.
+    return Array.from(years).sort((a: number, b: number) => b - a);
   }, [transactions]);
 
   const getCategoryByValue = useCallback((value: string): Category | undefined => {

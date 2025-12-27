@@ -8,7 +8,9 @@ export const useTransactions = () => {
   const [transactions, setTransactions] = useState<Transaction[]>(() => {
     try {
       const storedTransactions = window.localStorage.getItem(STORAGE_KEY);
-      return storedTransactions ? JSON.parse(storedTransactions) : [];
+      const parsed = storedTransactions ? JSON.parse(storedTransactions) : [];
+      // Ensure existing transactions are sorted by date/time upon load
+      return parsed.sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch (error) {
       console.error('Error reading transactions from localStorage', error);
       return [];
@@ -36,7 +38,10 @@ export const useTransactions = () => {
   };
 
   const updateTransaction = (id: string, updates: Partial<Transaction>) => {
-    setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+    setTransactions(prev => {
+        const next = prev.map(t => t.id === id ? { ...t, ...updates } : t);
+        return next.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    });
   };
 
   const clearTransactions = () => {
@@ -49,7 +54,7 @@ export const useTransactions = () => {
   };
 
   const setAllTransactions = (newTransactions: Transaction[]) => {
-      setTransactions(newTransactions);
+      setTransactions(newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
   };
 
   return { transactions, addTransaction, deleteTransaction, updateTransaction, clearTransactions, setAllTransactions };

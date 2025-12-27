@@ -1,16 +1,17 @@
+
 <!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#475569" />
+    <meta name="theme-color" content="#4F46E5" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>OvaFin Finance Tracker</title>
+    <title>OvaFin - ฉลาดจัดการเงิน</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;660;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         theme: {
@@ -19,16 +20,20 @@
               'sans': ['Kanit', 'sans-serif'],
             },
             colors: {
-              'minimal-bg': '#F8FAFC', // Very light gray, almost white
+              'minimal-bg': '#F8FAFC', 
               'minimal-card': '#FFFFFF',
-              'minimal-border': '#E2E8F0',
-              'minimal-primary': '#475569', // Slate 600
-              'minimal-primary-hover': '#334155', // Slate 700
-              'minimal-text-main': '#1E293B', // Slate 800
-              'minimal-text-secondary': '#64748B', // Slate 500
-              'minimal-income': '#10B981', // Emerald 500
-              'minimal-expense': '#F43F5E', // Rose 500
+              'minimal-border': '#F1F5F9',
+              'minimal-primary': '#4F46E5', 
+              'minimal-primary-hover': '#4338CA', 
+              'minimal-text-main': '#0F172A', 
+              'minimal-text-secondary': '#64748B', 
+              'minimal-income': '#10B981', 
+              'minimal-expense': '#EF4444', 
             },
+            borderRadius: {
+              '3xl': '1.5rem',
+              '4xl': '2rem',
+            }
           }
         }
       }
@@ -47,19 +52,8 @@
 }
 </script>
 </head>
-  <body>
+  <body class="bg-minimal-bg">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
-    <script>
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(registration => {
-            console.log('SW registered: ', registration);
-          }).catch(registrationError => {
-            console.log('SW registration failed: ', registrationError);
-          });
-        });
-      }
-    </script>
   </body>
 </html>

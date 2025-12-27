@@ -17,162 +17,120 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
     const [category, setCategory] = useState(expenseCategories[0]?.value || '');
     const [isReimbursable, setIsReimbursable] = useState(false);
     
-    // Fix: Initialize date using Local Time to prevent UTC offset issues
     const [date, setDate] = useState(() => {
         const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     });
 
     const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
     const [bank, setBank] = useState<string>(banks[0]?.id || '');
     const [source, setSource] = useState<TransactionSource>('personal');
+
+    // Fix: Define categories based on type to resolve missing variable error.
+    const categories = type === 'expense' ? expenseCategories : incomeCategories;
     
     useEffect(() => {
         setCategory(type === 'expense' ? expenseCategories[0]?.value : incomeCategories[0]?.value);
         if (type === 'income') setIsReimbursable(false);
     }, [type, incomeCategories, expenseCategories]);
 
-    useEffect(() => {
-        if (paymentMethod === 'online' && !bank && banks.length > 0) {
-            setBank(banks[0].id);
-        }
-    }, [paymentMethod, bank, banks]);
-
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (description && amount && amount > 0 && category) {
+            // Logic เพื่อให้เรียงลำดับตามเวลา:
+            // รวมวันที่ที่เลือก เข้ากับ "เวลาปัจจุบัน" เพื่อให้รายการเรียงกันตามลำดับที่กดจริง
+            const now = new Date();
+            const selectedDate = new Date(date);
+            selectedDate.setHours(now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
+            
             const transactionData: Omit<Transaction, 'id'> = {
                 description,
                 amount,
                 type,
                 category,
-                date,
+                date: selectedDate.toISOString(), // บันทึกเป็น ISO String ที่มีเวลาด้วย
                 paymentMethod,
                 source,
                 isReimbursable: type === 'expense' ? isReimbursable : false,
-                isCleared: false
+                isCleared: false,
+                bank: paymentMethod === 'online' ? bank : undefined
             };
-            if (paymentMethod === 'online') {
-                if (!bank) {
-                    alert('กรุณาเลือกธนาคาร');
-                    return;
-                }
-                transactionData.bank = bank;
-            }
+            
             onAddTransaction(transactionData);
         }
     };
 
-    const handleTypeChange = (newType: TransactionType) => {
-        setType(newType);
-    }
-
-    const categories = type === 'expense' ? expenseCategories : incomeCategories;
-    const inputClasses = "mt-1 block w-full px-4 py-2 bg-slate-50 border border-minimal-border rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-minimal-primary text-minimal-text-main";
+    const inputClasses = "mt-1.5 block w-full px-5 py-3.5 bg-slate-50 border border-minimal-border rounded-2xl focus:ring-2 focus:ring-minimal-primary outline-none text-minimal-text-main font-semibold transition-all hover:bg-white";
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
-            <div className="bg-minimal-card rounded-2xl shadow-xl w-full max-w-md p-6 m-4 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-bold text-minimal-text-main">เพิ่มรายการใหม่</h2>
-                    <button onClick={onClose} className="text-minimal-text-secondary hover:text-minimal-text-main text-2xl font-bold">&times;</button>
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+            <div className="bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg p-8 m-4 max-h-[95vh] overflow-y-auto transform transition-all animate-in zoom-in-95 duration-200" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-2xl font-black text-minimal-text-main">เพิ่มรายการใหม่</h2>
+                    <button onClick={onClose} className="w-10 h-10 flex items-center justify-center bg-slate-100 text-minimal-text-secondary hover:text-minimal-expense rounded-full transition-colors active:scale-90">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-2 mb-6 bg-slate-100 p-1 rounded-full">
-                    <button onClick={() => handleTypeChange('expense')} className={`py-2 rounded-full font-semibold transition-colors ${type === 'expense' ? 'bg-minimal-expense text-white' : 'text-minimal-text-secondary'}`}>รายจ่าย</button>
-                    <button onClick={() => handleTypeChange('income')} className={`py-2 rounded-full font-semibold transition-colors ${type === 'income' ? 'bg-minimal-income text-white' : 'text-minimal-text-secondary'}`}>รายรับ</button>
-                </div>
-
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-minimal-text-secondary mb-1">สังกัด/ประเภท</label>
-                        <div className="grid grid-cols-3 gap-2">
-                            <button type="button" onClick={() => setSource('erawan')} className={`py-2 px-1 rounded-lg text-xs md:text-sm font-semibold transition-colors ${source === 'erawan' ? 'bg-minimal-primary text-white' : 'bg-slate-50 text-minimal-text-secondary border border-minimal-border'}`}>เอราวัณ</button>
-                            <button type="button" onClick={() => setSource('wildfire_station')} className={`py-2 px-1 rounded-lg text-xs md:text-sm font-semibold transition-colors ${source === 'wildfire_station' ? 'bg-minimal-primary text-white' : 'bg-slate-50 text-minimal-text-secondary border border-minimal-border'}`}>สถานีไฟป่า</button>
-                            <button type="button" onClick={() => setSource('personal')} className={`py-2 px-1 rounded-lg text-xs md:text-sm font-semibold transition-colors ${source === 'personal' ? 'bg-minimal-primary text-white' : 'bg-slate-50 text-minimal-text-secondary border border-minimal-border'}`}>ส่วนตัว</button>
-                        </div>
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-3xl">
+                        <button type="button" onClick={() => setType('expense')} className={`py-3 rounded-2xl font-black transition-all ${type === 'expense' ? 'bg-white shadow-md text-minimal-expense' : 'text-minimal-text-secondary hover:text-minimal-text-main'}`}>รายจ่าย</button>
+                        <button type="button" onClick={() => setType('income')} className={`py-3 rounded-2xl font-black transition-all ${type === 'income' ? 'bg-white shadow-md text-minimal-income' : 'text-minimal-text-secondary hover:text-minimal-text-main'}`}>รายรับ</button>
                     </div>
 
-                    <div className="flex items-center justify-between bg-amber-50 p-3 rounded-lg border border-amber-100">
-                        <div className="flex flex-col">
-                            <span className="text-sm font-bold text-amber-900">เบิกคืนได้ (สำรองจ่าย)</span>
-                            <span className="text-xs text-amber-700">รายการนี้จะถูกติดตามเพื่อรอเบิกคืน</span>
-                        </div>
-                        <label className="relative inline-flex items-center cursor-pointer">
-                            <input 
-                                type="checkbox" 
-                                checked={isReimbursable} 
-                                onChange={(e) => setIsReimbursable(e.target.checked)}
-                                disabled={type === 'income'}
-                                className="sr-only peer" 
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
-                        </label>
-                    </div>
-
-                    <div>
-                        <label className="block text-sm font-medium text-minimal-text-secondary">จำนวนเงิน</label>
-                        <input
-                            type="number"
-                            value={amount}
-                            onChange={(e) => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))}
-                            placeholder="0.00"
-                            className={inputClasses}
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-minimal-text-secondary">หมวดหมู่</label>
-                        <select
-                            value={category}
-                            onChange={(e) => setCategory(e.target.value)}
-                            className={inputClasses}
-                        >
-                            {categories.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
-                        </select>
-                    </div>
-                     <div>
-                        <label className="block text-sm font-medium text-minimal-text-secondary">ช่องทางการชำระเงิน</label>
-                        <div className="grid grid-cols-2 gap-2 mt-1 bg-slate-100 p-1 rounded-lg">
-                            <button type="button" onClick={() => setPaymentMethod('cash')} className={`py-2 rounded-lg text-sm font-semibold transition-colors ${paymentMethod === 'cash' ? 'bg-white shadow-sm' : 'text-minimal-text-secondary'}`}>เงินสด</button>
-                            <button type="button" onClick={() => setPaymentMethod('online')} className={`py-2 rounded-lg text-sm font-semibold transition-colors ${paymentMethod === 'online' ? 'bg-white shadow-sm' : 'text-minimal-text-secondary'}`}>ออนไลน์</button>
-                        </div>
-                    </div>
-                    {paymentMethod === 'online' && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium text-minimal-text-secondary">ธนาคาร</label>
-                            <select value={bank} onChange={(e) => setBank(e.target.value)} className={inputClasses} required>
-                                {banks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                            </select>
+                            <label className="block text-xs font-black text-minimal-text-secondary uppercase tracking-widest mb-1 px-1">จำนวนเงิน</label>
+                            <input type="number" step="any" value={amount} onChange={e => setAmount(e.target.value === '' ? '' : parseFloat(e.target.value))} placeholder="0.00" className={`${inputClasses} text-2xl font-black text-minimal-primary`} required />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-black text-minimal-text-secondary uppercase tracking-widest mb-1 px-1">วันที่</label>
+                            <input type="date" value={date} onChange={e => setDate(e.target.value)} className={inputClasses} required />
+                        </div>
+                    </div>
+
+                    {type === 'expense' && (
+                        <div className="p-4 bg-amber-50 rounded-3xl border border-amber-100 flex items-center justify-between group cursor-pointer" onClick={() => setIsReimbursable(!isReimbursable)}>
+                            <div className="flex items-center gap-3">
+                                <div className={`p-2.5 rounded-xl transition-colors ${isReimbursable ? 'bg-amber-500 text-white shadow-lg' : 'bg-white text-amber-400 border border-amber-100'}`}>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01" /></svg>
+                                </div>
+                                <div>
+                                    <p className="text-sm font-black text-amber-900 leading-tight">ยอดรอเบิกคืน (สำรองจ่าย)</p>
+                                    <p className="text-[10px] font-bold text-amber-600 uppercase">ระบบจะช่วยติดตามการคืนเงิน</p>
+                                </div>
+                            </div>
+                            <div className={`w-10 h-6 rounded-full transition-colors relative ${isReimbursable ? 'bg-amber-500' : 'bg-slate-200'}`}>
+                                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isReimbursable ? 'left-5' : 'left-1'}`}></div>
+                            </div>
                         </div>
                     )}
-                    <div>
-                        <label className="block text-sm font-medium text-minimal-text-secondary">รายละเอียด</label>
-                        <input
-                            type="text"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            placeholder="เช่น ค่ากาแฟ, เงินเดือน"
-                            className={inputClasses}
-                            required
-                        />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-xs font-black text-minimal-text-secondary uppercase tracking-widest mb-1 px-1">แหล่งเงิน</label>
+                            <select value={source} onChange={e => setSource(e.target.value as TransactionSource)} className={inputClasses}>
+                                <option value="personal">ส่วนตัว</option>
+                                <option value="erawan">เอราวัณ</option>
+                                <option value="wildfire_station">สถานีไฟป่า</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-black text-minimal-text-secondary uppercase tracking-widest mb-1 px-1">หมวดหมู่</label>
+                            <select value={category} onChange={e => setCategory(e.target.value)} className={inputClasses}>
+                                {categories.map(cat => <option key={cat.value} value={cat.value}>{cat.label}</option>)}
+                            </select>
+                        </div>
                     </div>
+
                     <div>
-                        <label className="block text-sm font-medium text-minimal-text-secondary">วันที่</label>
-                        <input
-                            type="date"
-                            value={date}
-                            onChange={(e) => setDate(e.target.value)}
-                            className={inputClasses}
-                            required
-                        />
+                        <label className="block text-xs font-black text-minimal-text-secondary uppercase tracking-widest mb-1 px-1">รายละเอียด</label>
+                        <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="เช่น ซื้อกาแฟเช้า" className={inputClasses} required />
                     </div>
-                    <div className="flex justify-end pt-4 space-x-3">
-                        <button type="button" onClick={onClose} className="px-5 py-2 bg-slate-100 text-minimal-text-secondary rounded-lg hover:bg-slate-200 font-semibold">ยกเลิก</button>
-                        <button type="submit" className="px-5 py-2 bg-minimal-primary text-white rounded-lg hover:bg-minimal-primary-hover font-semibold">บันทึก</button>
+
+                    <div className="flex gap-4 pt-2">
+                        <button type="button" onClick={onClose} className="flex-1 py-4 text-minimal-text-secondary font-black bg-slate-50 hover:bg-slate-100 rounded-3xl transition-colors">ยกเลิก</button>
+                        <button type="submit" className="flex-1 py-4 bg-minimal-primary text-white font-black rounded-3xl shadow-xl shadow-indigo-100 hover:bg-minimal-primary-hover transition-all active:scale-95">บันทึกรายการ</button>
                     </div>
                 </form>
             </div>

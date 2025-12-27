@@ -117,7 +117,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ transactions, getCategoryB
     }, [filteredTransactions]);
 
     const expenseChartData = useMemo(() => {
-        return Object.entries(expenseByCategory)
+        // Fix: Cast entries to [string, number][] to ensure arithmetic operations work.
+        return (Object.entries(expenseByCategory) as [string, number][])
             .map(([value, amount]) => ({ 
                 name: getCategoryByValue(value)?.label || value, 
                 amount 
@@ -127,7 +128,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ transactions, getCategoryB
     }, [expenseByCategory, getCategoryByValue]);
 
     const expenseSourceChartData = useMemo(() => {
-        return Object.entries(expenseBySource)
+        // Fix: Cast entries to [string, number][] to avoid operator '>' errors.
+        return (Object.entries(expenseBySource) as [string, number][])
             .map(([key, value]) => ({
                 name: getSourceLabel(key as TransactionSource),
                 value: value,
@@ -137,7 +139,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ transactions, getCategoryB
     }, [expenseBySource]);
 
     const incomeSourceChartData = useMemo(() => {
-        return Object.entries(incomeBySource)
+        // Fix: Cast entries to [string, number][] to avoid operator '>' errors.
+        return (Object.entries(incomeBySource) as [string, number][])
             .map(([key, value]) => ({
                 name: getSourceLabel(key as TransactionSource),
                 value: value,
