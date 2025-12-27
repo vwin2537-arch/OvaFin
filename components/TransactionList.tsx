@@ -120,11 +120,14 @@ interface TransactionListProps {
     transactions: Transaction[];
     deleteTransaction: (id: string) => void;
     updateTransaction: (id: string, updates: Partial<Transaction>) => void;
+    bulkUpdateTransactions: (ids: string[], updates: Partial<Transaction>) => void;
     getCategoryByValue: (value: string) => Category | undefined;
     getBankById: (id: string) => Bank | undefined;
 }
 
-export const TransactionList: React.FC<TransactionListProps> = ({ transactions, deleteTransaction, updateTransaction, getCategoryByValue, getBankById }) => {
+export const TransactionList: React.FC<TransactionListProps> = ({ 
+    transactions, deleteTransaction, updateTransaction, bulkUpdateTransactions, getCategoryByValue, getBankById 
+}) => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [transactionToDelete, setTransactionToDelete] = useState<{id: string, description: string} | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -142,12 +145,10 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
 
     const transactionYears = useMemo(() => {
         const years = new Set(transactions.map(t => new Date(t.date).getFullYear()));
-        // Fix: Explicitly type sort parameters to resolve arithmetic operation error.
         return Array.from(years).sort((a: number, b: number) => b - a);
     }, [transactions]);
 
     const filteredTransactions = useMemo(() => {
-        // Sorting logic: Sort by Date AND Time (using getTime())
         return transactions
             .filter(t => {
                 const tDate = new Date(t.date);
@@ -162,6 +163,18 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     }, [transactions, selectedSource, selectedStatus, selectedType, selectedMonth, selectedYear]);
 
+    const totalPendingAmount = useMemo(() => {
+        return filteredTransactions
+            .filter(t => t.isReimbursable === true && t.isCleared !== true)
+            .reduce((sum, t) => sum + t.amount, 0);
+    }, [filteredTransactions]);
+
+    const selectedSum = useMemo(() => {
+        return transactions
+            .filter(t => selectedIds.has(t.id))
+            .reduce((sum, t) => sum + t.amount, 0);
+    }, [transactions, selectedIds]);
+
     const handleSelect = (id: string) => {
         const next = new Set(selectedIds);
         if (next.has(id)) next.delete(id); else next.add(id);
@@ -169,8 +182,8 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
     };
 
     const handleBulkClear = () => {
-        if (selectedIds.size > 0 && confirm(`เคลียร์ยอด ${selectedIds.size} รายการที่เลือก?`)) {
-            selectedIds.forEach(id => updateTransaction(id, { isCleared: true }));
+        if (selectedIds.size > 0 && confirm(`ยืนยันว่าได้รับเงินคืนสำหรับ ${selectedIds.size} รายการที่เลือกแล้ว? (ยอดรวม ฿${selectedSum.toLocaleString()})`)) {
+            bulkUpdateTransactions(Array.from(selectedIds), { isCleared: true });
             setSelectedIds(new Set());
         }
     };
@@ -185,11 +198,34 @@ export const TransactionList: React.FC<TransactionListProps> = ({ transactions, 
                     <p className="text-minimal-text-secondary font-medium">จัดการทุกการเคลื่อนไหวตามลำดับเวลา</p>
                 </div>
                 {selectedIds.size > 0 && (
-                    <button onClick={handleBulkClear} className="bg-minimal-primary text-white px-6 py-3 rounded-2xl text-sm font-black hover:bg-minimal-primary-hover shadow-lg shadow-indigo-100 transition-all active:scale-95">
-                        เคลียร์ที่เลือก ({selectedIds.size})
-                    </button>
+                    <div className="flex flex-col items-end gap-2 animate-in slide-in-from-right-4 duration-300">
+                        <div className="text-[10px] font-black text-indigo-600 uppercase bg-indigo-50 px-3 py-1 rounded-full border border-indigo-100">
+                            เลือกอยู่ {selectedIds.size} รายการ เป็นเงิน ฿{selectedSum.toLocaleString(undefined, {minimumFractionDigits: 2})}
+                        </div>
+                        <button onClick={handleBulkClear} className="bg-minimal-primary text-white px-6 py-3 rounded-2xl text-sm font-black hover:bg-minimal-primary-hover shadow-lg shadow-indigo-200 transition-all active:scale-95 flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
+                            ยืนยันได้รับเงินคืนแล้ว
+                        </button>
+                    </div>
                 )}
             </header>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-3xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm animate-in slide-in-from-top-4 duration-500">
+                <div className="flex items-center gap-4">
+                    <div className="bg-amber-500 text-white p-3 rounded-2xl shadow-lg shadow-amber-200">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                    </div>
+                    <div>
+                        <p className="text-xs font-black text-amber-700 uppercase tracking-widest leading-none mb-1">ยอดรวมรอเบิกคืนในหน้านี้</p>
+                        <p className="text-sm font-bold text-amber-600">(อ้างอิงตามฟิลเตอร์ที่เลือก)</p>
+                    </div>
+                </div>
+                <div className="text-center sm:text-right">
+                    <p className="text-3xl font-black text-amber-600">
+                        ฿{totalPendingAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </p>
+                </div>
+            </div>
 
             <div className="flex flex-wrap items-center gap-3 bg-slate-100/50 p-2 rounded-[2rem]">
                 <div className="relative">

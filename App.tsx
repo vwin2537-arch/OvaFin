@@ -13,7 +13,16 @@ import { Sidebar } from './components/Sidebar';
 import { SuccessModal } from './components/SuccessModal';
 
 const App: React.FC = () => {
-  const { transactions, addTransaction, deleteTransaction, updateTransaction, clearTransactions, setAllTransactions } = useTransactions();
+  const { 
+    transactions, 
+    addTransaction, 
+    deleteTransaction, 
+    updateTransaction, 
+    bulkUpdateTransactions,
+    clearTransactions, 
+    setAllTransactions 
+  } = useTransactions();
+  
   const { 
     incomeCategories, expenseCategories, addCategory, deleteCategory, clearCategories,
     setAllIncomeCategories, setAllExpenseCategories 
@@ -24,14 +33,12 @@ const App: React.FC = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   
-  // Success Modal State
   const [successModal, setSuccessModal] = useState({ isOpen: false, title: '', message: '' });
 
   const allCategories = useMemo(() => [...incomeCategories, ...expenseCategories], [incomeCategories, expenseCategories]);
 
   const transactionYears = useMemo(() => {
     const years = new Set(transactions.map(t => new Date(t.date).getFullYear()));
-    // Fix: Explicitly type sort parameters to resolve arithmetic operation error.
     return Array.from(years).sort((a: number, b: number) => b - a);
   }, [transactions]);
 
@@ -84,6 +91,7 @@ const App: React.FC = () => {
                   transactions={transactions} 
                   deleteTransaction={deleteTransaction} 
                   updateTransaction={updateTransaction}
+                  bulkUpdateTransactions={bulkUpdateTransactions}
                   getCategoryByValue={getCategoryByValue} 
                   getBankById={getBankById} 
                 />;
@@ -117,7 +125,6 @@ const App: React.FC = () => {
         {renderView()}
       </main>
 
-      {/* Floating Action Button */}
       <button
         onClick={() => setIsAddModalOpen(true)}
         className="fixed bottom-6 right-6 bg-minimal-primary hover:bg-minimal-primary-hover text-white rounded-full w-14 h-14 flex items-center justify-center shadow-lg transition-colors duration-200 z-40"

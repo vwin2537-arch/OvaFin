@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import type { Transaction } from '../types';
 
 const STORAGE_KEY = 'finance-tracker-transactions';
@@ -9,7 +9,6 @@ export const useTransactions = () => {
     try {
       const storedTransactions = window.localStorage.getItem(STORAGE_KEY);
       const parsed = storedTransactions ? JSON.parse(storedTransactions) : [];
-      // Ensure existing transactions are sorted by date/time upon load
       return parsed.sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime());
     } catch (error) {
       console.error('Error reading transactions from localStorage', error);
@@ -25,37 +24,53 @@ export const useTransactions = () => {
     }
   }, [transactions]);
 
-  const addTransaction = (transaction: Omit<Transaction, 'id'>) => {
+  const addTransaction = useCallback((transaction: Omit<Transaction, 'id'>) => {
     const newTransaction: Transaction = {
       id: new Date().toISOString() + Math.random(),
       ...transaction,
     };
     setTransactions(prev => [...prev, newTransaction].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-  };
+  }, []);
 
-  const deleteTransaction = (id: string) => {
+  const deleteTransaction = useCallback((id: string) => {
     setTransactions(prev => prev.filter(t => t.id !== id));
-  };
+  }, []);
 
-  const updateTransaction = (id: string, updates: Partial<Transaction>) => {
+  const updateTransaction = useCallback((id: string, updates: Partial<Transaction>) => {
     setTransactions(prev => {
         const next = prev.map(t => t.id === id ? { ...t, ...updates } : t);
         return next.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     });
-  };
+  }, []);
 
-  const clearTransactions = () => {
+  const bulkUpdateTransactions = useCallback((ids: string[], updates: Partial<Transaction>) => {
+    setTransactions(prev => {
+        const idSet = new Set(ids);
+        const next = prev.map(t => idSet.has(t.id) ? { ...t, ...updates } : t);
+        return next.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    });
+  }, []);
+
+  const clearTransactions = useCallback(() => {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
       setTransactions([]);
     } catch (error) {
       console.error('Error clearing transactions from localStorage', error);
     }
-  };
+  }, []);
 
-  const setAllTransactions = (newTransactions: Transaction[]) => {
+  const setAllTransactions = useCallback((newTransactions: Transaction[]) => {
       setTransactions(newTransactions.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-  };
+  }, []);
 
-  return { transactions, addTransaction, deleteTransaction, updateTransaction, clearTransactions, setAllTransactions };
+  return { 
+    transactions, 
+    addTransaction, 
+    deleteTransaction, 
+    updateTransaction, 
+    bulkUpdateTransactions, 
+    clearTransactions, 
+    setAllTransactions 
+  };
 };
