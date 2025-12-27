@@ -7,20 +7,18 @@ const thaiMonths = [
 ];
 
 interface MonthYearPickerProps {
-    value: { month: number; year: number };
+    value: { month: number | 'all'; year: number };
     availableYears: number[];
-    onChange: (value: { month: number; year: number }) => void;
+    onChange: (value: { month: number | 'all'; year: number }) => void;
     onClose: () => void;
     selectMode: 'month' | 'year';
 }
 
 export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availableYears, onChange, onClose, selectMode }) => {
-    // Explicitly set initial state based on selectMode
     const [view, setView] = useState<'months' | 'years'>(selectMode === 'year' ? 'years' : 'months');
     const [displayYear, setDisplayYear] = useState(value.year);
     const pickerRef = useRef<HTMLDivElement>(null);
 
-    // Force view update if selectMode changes while component is mounted
     useEffect(() => {
         if (selectMode === 'year') {
             setView('years');
@@ -41,42 +39,53 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availab
         };
     }, [onClose]);
 
-    const handleMonthSelect = (monthIndex: number) => {
+    const handleMonthSelect = (monthIndex: number | 'all') => {
         onChange({ month: monthIndex, year: displayYear });
     };
     
     const handleYearSelect = (year: number) => {
         if (selectMode === 'year') {
-            // If in year mode, selecting a year is the final action
             onChange({ month: value.month, year: year });
         } else {
-            // If in month mode, selecting a year drills down to months
             setDisplayYear(year);
             setView('months');
         }
     };
 
     const toggleView = () => {
-        // Prevent switching to months view if we are in year-only mode
         if (selectMode === 'year') return;
         setView(view === 'months' ? 'years' : 'months');
     };
 
     const renderMonthView = () => (
-        <div className="grid grid-cols-4 gap-2 p-2">
-            {thaiMonths.map((month, index) => (
+        <div className="p-2">
+            <div className="grid grid-cols-4 gap-2 mb-2">
+                {thaiMonths.map((month, index) => (
+                    <button
+                        key={month}
+                        onClick={() => handleMonthSelect(index)}
+                        className={`px-2 py-3 text-sm rounded-lg transition-colors ${
+                            value.month === index && value.year === displayYear
+                                ? 'bg-minimal-primary text-white font-semibold'
+                                : 'hover:bg-slate-100 text-minimal-text-secondary'
+                        }`}
+                    >
+                        {month}
+                    </button>
+                ))}
+            </div>
+            {selectMode === 'month' && (
                 <button
-                    key={month}
-                    onClick={() => handleMonthSelect(index)}
-                    className={`px-2 py-3 text-sm rounded-lg transition-colors ${
-                        value.month === index && value.year === displayYear
-                            ? 'bg-minimal-primary text-white font-semibold'
-                            : 'hover:bg-slate-100 text-minimal-text-secondary'
+                    onClick={() => handleMonthSelect('all')}
+                    className={`w-full py-2.5 text-sm font-bold rounded-lg border-2 transition-colors ${
+                        value.month === 'all' && value.year === displayYear
+                        ? 'bg-minimal-primary border-minimal-primary text-white'
+                        : 'border-slate-200 text-minimal-primary hover:bg-slate-50'
                     }`}
                 >
-                    {month}
+                    แสดงทุกเดือนของปี {displayYear + 543}
                 </button>
-            ))}
+            )}
         </div>
     );
 
@@ -87,11 +96,7 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availab
             years.push(currentYear);
         }
         years.sort((a,b) => b - a);
-
-        // Ensure at least some years are shown even if no data
-        if (years.length === 0) {
-            years.push(currentYear);
-        }
+        if (years.length === 0) years.push(currentYear);
 
         return (
             <div className="grid grid-cols-4 gap-2 p-2 max-h-48 overflow-y-auto">
@@ -113,9 +118,12 @@ export const MonthYearPicker: React.FC<MonthYearPickerProps> = ({ value, availab
     };
 
     return (
-        <div ref={pickerRef} className="absolute top-full right-0 mt-2 w-72 bg-minimal-card border border-minimal-border rounded-xl shadow-lg z-50">
+        <div 
+            ref={pickerRef} 
+            className="w-[calc(100vw-2rem)] sm:w-80 bg-minimal-card border border-minimal-border rounded-xl shadow-2xl overflow-hidden"
+            style={{ maxWidth: '320px' }}
+        >
             <div className="flex items-center justify-between p-2 border-b border-minimal-border">
-                {/* Hide navigation arrows if in year-only mode or inside year view */}
                 <button 
                     onClick={() => setDisplayYear(displayYear - 1)} 
                     className={`p-2 rounded-full hover:bg-slate-100 text-minimal-text-secondary ${selectMode === 'year' || view === 'years' ? 'invisible' : ''}`}

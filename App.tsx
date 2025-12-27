@@ -13,7 +13,7 @@ import { Sidebar } from './components/Sidebar';
 import { SuccessModal } from './components/SuccessModal';
 
 const App: React.FC = () => {
-  const { transactions, addTransaction, deleteTransaction, clearTransactions, setAllTransactions } = useTransactions();
+  const { transactions, addTransaction, deleteTransaction, updateTransaction, clearTransactions, setAllTransactions } = useTransactions();
   const { 
     incomeCategories, expenseCategories, addCategory, deleteCategory, clearCategories,
     setAllIncomeCategories, setAllExpenseCategories 
@@ -79,7 +79,13 @@ const App: React.FC = () => {
       case 'dashboard':
         return <Dashboard transactions={transactions} getCategoryByValue={getCategoryByValue} transactionYears={transactionYears} />;
       case 'transactions':
-        return <TransactionList transactions={transactions} deleteTransaction={deleteTransaction} getCategoryByValue={getCategoryByValue} getBankById={getBankById} />;
+        return <TransactionList 
+                  transactions={transactions} 
+                  deleteTransaction={deleteTransaction} 
+                  updateTransaction={updateTransaction}
+                  getCategoryByValue={getCategoryByValue} 
+                  getBankById={getBankById} 
+                />;
       case 'settings':
         return <Settings 
                   incomeCategories={incomeCategories} 

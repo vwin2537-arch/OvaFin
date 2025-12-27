@@ -15,8 +15,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState<number | ''>('');
     const [category, setCategory] = useState(expenseCategories[0]?.value || '');
+    const [isReimbursable, setIsReimbursable] = useState(false);
     
-    // Fix: Initialize date using Local Time to prevent UTC offset issues (e.g., defaulted to yesterday early in the morning)
+    // Fix: Initialize date using Local Time to prevent UTC offset issues
     const [date, setDate] = useState(() => {
         const now = new Date();
         const year = now.getFullYear();
@@ -31,6 +32,7 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
     
     useEffect(() => {
         setCategory(type === 'expense' ? expenseCategories[0]?.value : incomeCategories[0]?.value);
+        if (type === 'income') setIsReimbursable(false);
     }, [type, incomeCategories, expenseCategories]);
 
     useEffect(() => {
@@ -41,7 +43,6 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // Fix: Use a truthiness check on amount to narrow type for comparison.
         if (description && amount && amount > 0 && category) {
             const transactionData: Omit<Transaction, 'id'> = {
                 description,
@@ -50,7 +51,9 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
                 category,
                 date,
                 paymentMethod,
-                source
+                source,
+                isReimbursable: type === 'expense' ? isReimbursable : false,
+                isCleared: false
             };
             if (paymentMethod === 'online') {
                 if (!bank) {
@@ -91,6 +94,23 @@ export const AddTransactionModal: React.FC<AddTransactionModalProps> = ({ onClos
                             <button type="button" onClick={() => setSource('wildfire_station')} className={`py-2 px-1 rounded-lg text-xs md:text-sm font-semibold transition-colors ${source === 'wildfire_station' ? 'bg-minimal-primary text-white' : 'bg-slate-50 text-minimal-text-secondary border border-minimal-border'}`}>สถานีไฟป่า</button>
                             <button type="button" onClick={() => setSource('personal')} className={`py-2 px-1 rounded-lg text-xs md:text-sm font-semibold transition-colors ${source === 'personal' ? 'bg-minimal-primary text-white' : 'bg-slate-50 text-minimal-text-secondary border border-minimal-border'}`}>ส่วนตัว</button>
                         </div>
+                    </div>
+
+                    <div className="flex items-center justify-between bg-amber-50 p-3 rounded-lg border border-amber-100">
+                        <div className="flex flex-col">
+                            <span className="text-sm font-bold text-amber-900">เบิกคืนได้ (สำรองจ่าย)</span>
+                            <span className="text-xs text-amber-700">รายการนี้จะถูกติดตามเพื่อรอเบิกคืน</span>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={isReimbursable} 
+                                onChange={(e) => setIsReimbursable(e.target.checked)}
+                                disabled={type === 'income'}
+                                className="sr-only peer" 
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                        </label>
                     </div>
 
                     <div>

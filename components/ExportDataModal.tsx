@@ -33,7 +33,8 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, 
     const [exportSource, setExportSource] = useState<TransactionSource | 'all'>('all');
     const [period, setPeriod] = useState<Period>('month');
     const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-    const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth());
+    // Fix: Updated state to allow 'all' to fix TypeScript assignment error.
+    const [selectedMonth, setSelectedMonth] = useState<number | 'all'>(new Date().getMonth());
     const [isMonthYearPickerOpen, setIsMonthYearPickerOpen] = useState(false);
     
     const inputClasses = "mt-1 block w-full px-4 py-2 bg-slate-50 border border-minimal-border rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-minimal-primary text-minimal-text-main";
@@ -65,7 +66,9 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, 
                     weekStart.setHours(0,0,0,0);
                     return tDate >= weekStart;
                 case 'month':
-                    return tDate.getMonth() === selectedMonth && tDate.getFullYear() === selectedYear;
+                    // Fix: Updated logic to handle 'all' months within a year.
+                    const monthMatch = selectedMonth === 'all' || tDate.getMonth() === selectedMonth;
+                    return monthMatch && tDate.getFullYear() === selectedYear;
                 case 'year':
                     return tDate.getFullYear() === selectedYear;
                 case 'all':
@@ -163,7 +166,8 @@ export const ExportDataModal: React.FC<ExportDataModalProps> = ({ transactions, 
                             </label>
                              <button type="button" onClick={() => setIsMonthYearPickerOpen(true)} className={pickerButtonClasses}>
                                 <CalendarIcon />
-                                {period === 'month' ? `${fullThaiMonths[selectedMonth]} ${selectedYear + 543}` : `พ.ศ. ${selectedYear + 543}`}
+                                {/* Fix: Updated label to handle 'all' months selection. */}
+                                {period === 'month' ? (selectedMonth === 'all' ? `ทั้งปี ${selectedYear + 543}` : `${fullThaiMonths[selectedMonth as number]} ${selectedYear + 543}`) : `พ.ศ. ${selectedYear + 543}`}
                             </button>
                              {isMonthYearPickerOpen && (
                                 <MonthYearPicker

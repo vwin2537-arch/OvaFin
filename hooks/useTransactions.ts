@@ -35,6 +35,10 @@ export const useTransactions = () => {
     setTransactions(prev => prev.filter(t => t.id !== id));
   };
 
+  const updateTransaction = (id: string, updates: Partial<Transaction>) => {
+    setTransactions(prev => prev.map(t => t.id === id ? { ...t, ...updates } : t));
+  };
+
   const clearTransactions = () => {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -48,5 +52,5 @@ export const useTransactions = () => {
       setTransactions(newTransactions);
   };
 
-  return { transactions, addTransaction, deleteTransaction, clearTransactions, setAllTransactions };
+  return { transactions, addTransaction, deleteTransaction, updateTransaction, clearTransactions, setAllTransactions };
 };

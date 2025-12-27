@@ -18,6 +18,8 @@ export interface Transaction {
   paymentMethod: PaymentMethod;
   bank?: string; // Bank ID
   source: TransactionSource;
+  isReimbursable?: boolean; // New: For tracking prepayments
+  isCleared?: boolean;      // New: For tracking if prepayment is reimbursed
 }
 
 export interface Category {
